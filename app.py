@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from io import BytesIO
 
 # Page setup
 st.set_page_config(page_title="Expense Tracker", layout="wide")
@@ -19,7 +20,6 @@ if uploaded_file:
         if uploaded_file.name.endswith(".csv"):
             df = pd.read_csv(uploaded_file)
         else:
-            # Excel file - read first sheet
             df = pd.read_excel(uploaded_file, sheet_name=0)
 
         st.success("File uploaded successfully!")
@@ -61,6 +61,35 @@ if uploaded_file:
             ax2.set_ylabel("")
             ax2.set_title("Category-wise Spend")
             st.pyplot(fig2)
+
+            # --- Downloadable Summary ---
+            st.write("### 💾 Download Analysis Summary")
+
+            # Combine summary into a single dataframe
+            summary_df = pd.DataFrame({
+                "Category Total": total_per_category,
+            })
+            summary_df["Average Daily Spend"] = average_daily_spend
+            summary_df["Most Expensive Day"] = most_expensive_day.date()
+            summary_df["Max Spent on Day"] = max_spent
+
+            # Function to convert to Excel in-memory
+            def to_excel(df):
+                output = BytesIO()
+                writer = pd.ExcelWriter(output, engine="xlsxwriter")
+                df.to_excel(writer, index=True, sheet_name="Summary")
+                writer.save()
+                processed_data = output.getvalue()
+                return processed_data
+
+            excel_data = to_excel(summary_df)
+
+            st.download_button(
+                label="📥 Download Summary as Excel",
+                data=excel_data,
+                file_name="expense_summary.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 
         else:
             st.error(f"Dataset must contain these columns: {required_cols}")
