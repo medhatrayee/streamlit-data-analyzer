@@ -3,106 +3,70 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-st.set_page_config(page_title="Advanced Dataset Analyzer", layout="wide")
+# Page setup
+st.set_page_config(page_title="Expense Tracker", layout="wide")
+st.title("📊 Interactive Expense Tracker")
 
-st.title("📊 Advanced Dynamic Dataset Analyzer")
-st.write("Upload a CSV or Excel file and explore your dataset interactively.")
-
-# File uploader
-uploaded_file = st.file_uploader(
-    "Upload your dataset (CSV or Excel)",
-    type=["csv", "xlsx"]
+# Sidebar file upload
+st.sidebar.header("Upload your dataset")
+uploaded_file = st.sidebar.file_uploader(
+    "Choose a CSV or Excel file", type=["csv", "xls", "xlsx"]
 )
 
-if uploaded_file is not None:
+if uploaded_file:
+    try:
+        # Load file
+        if uploaded_file.name.endswith(".csv"):
+            df = pd.read_csv(uploaded_file)
+        else:
+            # Excel file - read first sheet
+            df = pd.read_excel(uploaded_file, sheet_name=0)
 
-    # Detect file type
-    file_type = uploaded_file.name.split(".")[-1]
+        st.success("File uploaded successfully!")
+        st.write("### Raw Data Preview", df.head())
 
-    if file_type == "csv":
-        df = pd.read_csv(uploaded_file)
-    elif file_type == "xlsx":
-        df = pd.read_excel(uploaded_file)
+        # Ensure required columns
+        required_cols = ["date", "category", "amount"]
+        if all(col.lower() in df.columns.str.lower() for col in required_cols):
+            df.columns = [col.lower() for col in df.columns]
 
-    st.success("File uploaded successfully!")
+            # Convert date column
+            df["date"] = pd.to_datetime(df["date"])
 
-    # Layout columns
-    col1, col2 = st.columns(2)
+            # --- Data Analysis ---
+            total_per_category = df.groupby("category")["amount"].sum()
+            daily_totals = df.groupby("date")["amount"].sum()
+            average_daily_spend = daily_totals.mean()
+            most_expensive_day = daily_totals.idxmax()
+            max_spent = daily_totals.max()
 
-    with col1:
-        st.subheader("Dataset Preview")
-        st.dataframe(df.head())
+            st.write("### 🏷 Total Spent per Category")
+            st.dataframe(total_per_category)
 
-    with col2:
-        st.subheader("Dataset Info")
-        st.write("Shape:", df.shape)
-        st.write("Missing Values:")
-        st.write(df.isnull().sum())
+            st.write(f"### 📅 Average Daily Spend: ₹{average_daily_spend:.2f}")
+            st.write(f"### 💸 Most Expensive Day: {most_expensive_day.date()} (₹{max_spent:.2f})")
 
-    if st.button("Generate Analysis"):
+            # --- Visualizations ---
+            st.write("### 📈 Daily Spending Trend")
+            fig1, ax1 = plt.subplots(figsize=(10, 4))
+            sns.lineplot(x=daily_totals.index, y=daily_totals.values, marker="o", ax=ax1)
+            ax1.set_xlabel("Date")
+            ax1.set_ylabel("Amount Spent")
+            ax1.set_title("Daily Spending Trend")
+            st.pyplot(fig1)
 
-        st.subheader("Statistical Summary")
-        st.write(df.describe())
-
-        numeric_cols = df.select_dtypes(include=["int64", "float64"]).columns
-
-        if len(numeric_cols) > 0:
-
-            st.subheader("Visualization Section")
-
-            plot_type = st.selectbox(
-                "Select Plot Type",
-                ["Histogram", "Boxplot", "Scatter Plot", "Line Plot"]
-            )
-
-            if plot_type in ["Histogram", "Boxplot", "Line Plot"]:
-                column = st.selectbox("Select Column", numeric_cols)
-
-                fig, ax = plt.subplots()
-
-                if plot_type == "Histogram":
-                    ax.hist(df[column])
-                    ax.set_title(f"Histogram of {column}")
-
-                elif plot_type == "Boxplot":
-                    ax.boxplot(df[column])
-                    ax.set_title(f"Boxplot of {column}")
-
-                elif plot_type == "Line Plot":
-                    ax.plot(df[column])
-                    ax.set_title(f"Line Plot of {column}")
-
-                st.pyplot(fig)
-
-            elif plot_type == "Scatter Plot":
-                col1 = st.selectbox("X-axis", numeric_cols)
-                col2 = st.selectbox("Y-axis", numeric_cols)
-
-                fig, ax = plt.subplots()
-                ax.scatter(df[col1], df[col2])
-                ax.set_xlabel(col1)
-                ax.set_ylabel(col2)
-                ax.set_title(f"{col1} vs {col2}")
-
-                st.pyplot(fig)
-
-            # Correlation Heatmap
-            st.subheader("Correlation Matrix")
-
-            fig, ax = plt.subplots()
-            sns.heatmap(df[numeric_cols].corr(), annot=True, cmap="coolwarm")
-            st.pyplot(fig)
+            st.write("### 🥧 Category-wise Spending")
+            fig2, ax2 = plt.subplots(figsize=(6, 6))
+            total_per_category.plot.pie(autopct="%1.1f%%", ax=ax2, startangle=90)
+            ax2.set_ylabel("")
+            ax2.set_title("Category-wise Spend")
+            st.pyplot(fig2)
 
         else:
-            st.warning("No numeric columns found for visualization.")
+            st.error(f"Dataset must contain these columns: {required_cols}")
 
-        # Download option
-        st.subheader("Download Dataset")
-        csv = df.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="Download Dataset as CSV",
-            data=csv,
-            file_name="processed_data.csv",
-            mime="text/csv",
-        )
+    except Exception as e:
+        st.error(f"Error loading file: {e}")
 
+else:
+    st.info("Upload a CSV or Excel file to start analyzing your expenses.")
