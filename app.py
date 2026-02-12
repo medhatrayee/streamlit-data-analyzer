@@ -2,8 +2,6 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from io import BytesIO
-
 
 # Page setup
 st.set_page_config(page_title="Expense Tracker", layout="wide")
@@ -21,7 +19,7 @@ if uploaded_file:
         if uploaded_file.name.endswith(".csv"):
             df = pd.read_csv(uploaded_file)
         else:
-            df = pd.read_excel(uploaded_file, sheet_name=0)
+            df = pd.read_excel(uploaded_file, sheet_name=0)  # First sheet
 
         st.success("File uploaded successfully!")
         st.write("### Raw Data Preview", df.head())
@@ -63,9 +61,6 @@ if uploaded_file:
             ax2.set_title("Category-wise Spend")
             st.pyplot(fig2)
 
-
-
-            
         else:
             st.error(f"Dataset must contain these columns: {required_cols}")
 
