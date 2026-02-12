@@ -64,16 +64,7 @@ if uploaded_file:
             ax2.set_title("Category-wise Spend")
             st.pyplot(fig2)
 
-            # --- Downloadable Summary ---
-            st.write("### 💾 Download Analysis Summary")
 
-            # Combine summary into a single dataframe
-            summary_df = pd.DataFrame({
-                "Category Total": total_per_category,
-            })
-            summary_df["Average Daily Spend"] = average_daily_spend
-            summary_df["Most Expensive Day"] = most_expensive_day.date()
-            summary_df["Max Spent on Day"] = max_spent
 
             # Function to convert to Excel in-memory
             def to_excel(df):
