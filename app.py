@@ -65,24 +65,7 @@ if uploaded_file:
 
 
 
-            # Function to convert to Excel in-memory
-            def to_excel(df):
-                output = BytesIO()
-                writer = pd.ExcelWriter(output, engine="xlsxwriter")
-                df.to_excel(writer, index=True, sheet_name="Summary")
-                writer.save()
-                processed_data = output.getvalue()
-                return processed_data
-
-            excel_data = to_excel(summary_df)
-
-            st.download_button(
-                label="📥 Download Summary as Excel",
-                data=excel_data,
-                file_name="expense_summary.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-
+            
         else:
             st.error(f"Dataset must contain these columns: {required_cols}")
 
